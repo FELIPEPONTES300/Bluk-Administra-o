@@ -186,6 +186,8 @@ const App = () => {
   // Reports state
   const [filiaisDisponiveis, setFiliaisDisponiveis] = useState<string[]>([]);
   const [filtroFilialRelatorio, setFiltroFilialRelatorio] = useState('');
+  const [filtroNomeRelatorio, setFiltroNomeRelatorio] = useState('');
+  const [filtroAnoRelatorio, setFiltroAnoRelatorio] = useState('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [dadosRelatorio, setDadosRelatorio] = useState([]);
@@ -666,6 +668,16 @@ Pelo que para maior clareza firmo o presente.`;
         relatorioFiltrado = relatorioFiltrado.filter(item => item.resultado.filial === filtroFilialRelatorio);
     }
 
+    if (filtroNomeRelatorio) {
+        relatorioFiltrado = relatorioFiltrado.filter(item => 
+            item.resultado.nome.toLowerCase().includes(filtroNomeRelatorio.toLowerCase())
+        );
+    }
+
+    if (filtroAnoRelatorio) {
+        relatorioFiltrado = relatorioFiltrado.filter(item => item.resultado.ano === filtroAnoRelatorio);
+    }
+
     const inicio = dataInicio ? new Date(dataInicio + 'T00:00:00') : null;
     const fim = dataFim ? new Date(dataFim + 'T23:59:59') : null;
 
@@ -715,8 +727,10 @@ Pelo que para maior clareza firmo o presente.`;
       yPos += 6;
       doc.setFont('helvetica', 'normal');
       doc.text(`Filial: ${filtroFilialRelatorio || 'Todas'}`, margin, yPos);
-      doc.text(`Período: ${dataInicio ? new Date(dataInicio + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'} a ${dataFim ? new Date(dataFim + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}`, docWidth - margin, yPos, { align: 'right' });
-      yPos += 10;
+      doc.text(`Funcionária: ${filtroNomeRelatorio || 'Todas'}`, margin + 50, yPos);
+      doc.text(`Ano: ${filtroAnoRelatorio || 'Todos'}`, margin + 110, yPos);
+      doc.text(`Período: ${dataInicio ? new Date(dataInicio + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'} a ${dataFim ? new Date(dataFim + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}`, docWidth - margin, yPos + 6, { align: 'right' });
+      yPos += 16;
 
       // Table
       const tableColumn = ["Filial", "Funcionária", "Total (Comissão)", "Ajuda de Custo"];
@@ -1075,8 +1089,8 @@ Pelo que para maior clareza firmo o presente.`;
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8" style={{ color: COLORS.textPrimary }}>Relatórios</h2>
         
         {/* Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 p-4 rounded-lg" style={{backgroundColor: '#2A2A2A'}}>
-            <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 rounded-lg" style={{backgroundColor: '#2A2A2A'}}>
+            <div>
               <label htmlFor="filtroFilialRelatorio" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Filtrar por Filial</label>
               <select
                 id="filtroFilialRelatorio"
@@ -1090,26 +1104,52 @@ Pelo que para maior clareza firmo o presente.`;
               </select>
             </div>
             <div>
-              <label htmlFor="dataInicio" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Data de Início</label>
+              <label htmlFor="filtroNomeRelatorio" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Funcionária</label>
               <input
-                type="date"
-                id="dataInicio"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
+                type="text"
+                id="filtroNomeRelatorio"
+                value={filtroNomeRelatorio}
+                onChange={(e) => setFiltroNomeRelatorio(e.target.value)}
+                placeholder="Nome da funcionária"
                 className="w-full px-4 py-3 rounded-lg transition"
                 style={{backgroundColor: '#333333', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
               />
             </div>
             <div>
-              <label htmlFor="dataFim" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Data Final</label>
+              <label htmlFor="filtroAnoRelatorio" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Ano Referência</label>
               <input
-                type="date"
-                id="dataFim"
-                value={dataFim}
-                onChange={(e) => setDataFim(e.target.value)}
+                type="number"
+                id="filtroAnoRelatorio"
+                value={filtroAnoRelatorio}
+                onChange={(e) => setFiltroAnoRelatorio(e.target.value)}
+                placeholder="Ex: 2024"
                 className="w-full px-4 py-3 rounded-lg transition"
                 style={{backgroundColor: '#333333', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="dataInicio" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Início</label>
+                  <input
+                    type="date"
+                    id="dataInicio"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg transition text-xs"
+                    style={{backgroundColor: '#333333', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="dataFim" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Fim</label>
+                  <input
+                    type="date"
+                    id="dataFim"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg transition text-xs"
+                    style={{backgroundColor: '#333333', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
+                  />
+                </div>
             </div>
         </div>
         
@@ -1138,6 +1178,7 @@ Pelo que para maior clareza firmo o presente.`;
                     <tr>
                         <th className="px-4 py-3 font-medium" style={{color: COLORS.textSecondary}}>Filial</th>
                         <th className="px-4 py-3 font-medium" style={{color: COLORS.textSecondary}}>Funcionária</th>
+                        <th className="px-4 py-3 font-medium" style={{color: COLORS.textSecondary}}>Ano</th>
                         <th className="px-4 py-3 font-medium text-right" style={{color: COLORS.textSecondary}}>Total (Comissão)</th>
                     </tr>
                 </thead>
@@ -1146,11 +1187,12 @@ Pelo que para maior clareza firmo o presente.`;
                         <tr key={item.id} className="border-t" style={{borderColor: COLORS.border}}>
                             <td className="px-4 py-3" style={{color: COLORS.textPrimary}}>{item.resultado.filial}</td>
                             <td className="px-4 py-3" style={{color: COLORS.textPrimary}}>{item.resultado.nome}</td>
+                            <td className="px-4 py-3" style={{color: COLORS.textPrimary}}>{item.resultado.ano}</td>
                             <td className="px-4 py-3 text-right font-semibold" style={{color: COLORS.success}}>{formatCurrency(item.resultado.totalGeral)}</td>
                         </tr>
                     )) : (
                         <tr>
-                            <td colSpan={3} className="text-center py-8" style={{color: COLORS.textSecondary}}>
+                            <td colSpan={4} className="text-center py-8" style={{color: COLORS.textSecondary}}>
                                 Nenhum dado encontrado. Por favor, ajuste os filtros e gere um novo relatório.
                             </td>
                         </tr>
@@ -1159,7 +1201,7 @@ Pelo que para maior clareza firmo o presente.`;
                 {dadosRelatorio.length > 0 && (
                   <tfoot className="sticky bottom-0" style={{backgroundColor: '#2A2A2A'}}>
                       <tr className="border-t-2" style={{borderColor: COLORS.border}}>
-                          <td colSpan={2} className="px-4 py-3 font-bold text-right text-base" style={{color: COLORS.textPrimary}}>TOTAL GERAL</td>
+                          <td colSpan={3} className="px-4 py-3 font-bold text-right text-base" style={{color: COLORS.textPrimary}}>TOTAL GERAL</td>
                           <td className="px-4 py-3 font-bold text-right text-base" style={{color: COLORS.success}}>{formatCurrency(totalGeralRelatorio)}</td>
                       </tr>
                   </tfoot>
