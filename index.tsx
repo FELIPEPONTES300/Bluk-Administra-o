@@ -173,11 +173,15 @@ const App = () => {
   const [lastDoc, setLastDoc] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [filtroNome, setFiltroNome] = useState('');
-  const [filtroFilial, setFiltroFilial] = useState('');
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [editingId, setEditingId] = useState(null);
   const [ajudaDeCusto, setAjudaDeCusto] = useState('');
+  const [ano, setAno] = useState(new Date().getFullYear().toString());
+
+  // Filters for history
+  const [filtroNome, setFiltroNome] = useState('');
+  const [filtroFilial, setFiltroFilial] = useState('');
+  const [filtroAno, setFiltroAno] = useState('');
 
   // Reports state
   const [filiaisDisponiveis, setFiliaisDisponiveis] = useState<string[]>([]);
@@ -301,6 +305,7 @@ const App = () => {
     const newResultado = {
       nome: trimmedName,
       filial,
+      ano,
       comissoes: parsedComissoes,
       parcela1,
       parcela2,
@@ -341,10 +346,13 @@ const App = () => {
             setNotification({ message: 'Cálculo atualizado com sucesso!', type: 'success' });
             
         } else {
-            // Check for duplicates before creating a new one
-            const existingEntry = historico.find(item => item.resultado.nome.toLowerCase() === trimmedName.toLowerCase());
+            // Check for duplicates before creating a new one (same name AND same year)
+            const existingEntry = historico.find(item => 
+                item.resultado.nome.toLowerCase() === trimmedName.toLowerCase() && 
+                item.resultado.ano === ano
+            );
             if(existingEntry) {
-                 setError(`Já existe um cálculo para '${trimmedName}'. Carregue-o do histórico para editar.`);
+                 setError(`Já existe um cálculo para '${trimmedName}' no ano de ${ano}. Carregue-o do histórico para editar.`);
                  setResultado(null); // stay on form
                  return;
             }
@@ -370,6 +378,7 @@ const App = () => {
   const handleNewCalculation = () => {
     setNome('');
     setFilial('');
+    setAno(new Date().getFullYear().toString());
     setComissoes(MESES.reduce((acc, mes) => ({ ...acc, [mes]: '' }), {}));
     setResultado(null);
     setError('');
@@ -381,6 +390,7 @@ const App = () => {
     const { resultado, id } = historyItem;
     setNome(resultado.nome);
     setFilial(resultado.filial);
+    setAno(resultado.ano || new Date().getFullYear().toString());
 
     const formattedComissoes = MESES.reduce((acc, mes) => {
         const value = resultado.comissoes[mes];
@@ -438,10 +448,7 @@ const App = () => {
         const valorFormatado = formatCurrency(valorTotal);
         const valorPorExtensoStr = numeroPorExtenso(valorTotal);
 
-        const dataAtual = new Date();
-        const mesAtual = MESES[dataAtual.getMonth()];
-        const anoAtual = dataAtual.getFullYear();
-        const mesAnoReferencia = `${mesAtual} de ${anoAtual}`;
+        const mesAnoReferencia = `${resultado.ano || new Date().getFullYear()}`;
 
         const textoRecibo = `Recebi do(s) Sr(s): WK CONFECÇOES LTDA a importância de ${valorFormatado} (${valorPorExtensoStr}), referente a serviços prestados em ${mesAnoReferencia}.
         
@@ -483,7 +490,7 @@ Pelo que para maior clareza firmo o presente.`;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(COLORS.background);
-    doc.text('Relatório de 13º Salário (Comissões)', docWidth - margin, yPos + 8, { align: 'right' });
+    doc.text(`Relatório de 13º Salário - Ano ${resultado.ano || ''}`, docWidth - margin, yPos + 8, { align: 'right' });
     yPos += 25;
     doc.setDrawColor(220, 220, 220);
     doc.line(margin, yPos, docWidth - margin, yPos);
@@ -768,6 +775,18 @@ Pelo que para maior clareza firmo o presente.`;
                 style={{backgroundColor: '#2A2A2A', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
               />
             </div>
+            <div>
+              <label htmlFor="ano" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Ano de Referência</label>
+              <input
+                type="number"
+                id="ano"
+                value={ano}
+                onChange={(e) => { setAno(e.target.value); setError(''); }}
+                placeholder="Ex: 2024"
+                className="w-full px-4 py-3 rounded-lg transition"
+                style={{backgroundColor: '#2A2A2A', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
+              />
+            </div>
         </div>
         
         <div>
@@ -790,21 +809,6 @@ Pelo que para maior clareza firmo o presente.`;
                   </div>
               </div>
             ))}
-          </div>
-        </div>
-        <div>
-          <label htmlFor="ajudaDeCusto" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Ajuda de Custo</label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-sm" style={{color: COLORS.textSecondary}}>R$</span>
-            <input
-              type="text"
-              id="ajudaDeCusto"
-              value={ajudaDeCusto}
-              onChange={(e) => setAjudaDeCusto(formatCurrencyOnChange(e.target.value))}
-              placeholder="0,00"
-              className="w-full pl-9 pr-2 py-2 rounded-lg transition text-sm"
-              style={{backgroundColor: '#2A2A2A', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
-            />
           </div>
         </div>
         <div>
@@ -855,12 +859,12 @@ Pelo que para maior clareza firmo o presente.`;
   );
 
   const renderResultado = () => {
-    const { comissoes, parcela1, parcela2, parcela3, totalGeral, nome, filial } = resultado;
+    const { comissoes, parcela1, parcela2, parcela3, totalGeral, nome, filial, ano: anoResultado } = resultado;
 
     return (
      <div className="p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-5xl mx-auto transition-all duration-300 animate-fade-in" style={{backgroundColor: COLORS.surface}}>
         <h2 className="text-2xl sm:text-3xl font-bold text-center" style={{ color: COLORS.textPrimary }}>Resultado do Cálculo</h2>
-        <p className="text-center text-lg mb-8" style={{ color: COLORS.textSecondary }}>{nome} – {filial}</p>
+        <p className="text-center text-lg mb-8" style={{ color: COLORS.textSecondary }}>{nome} – {filial} ({anoResultado})</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column: Summary and Final Result */}
@@ -966,16 +970,17 @@ Pelo que para maior clareza firmo o presente.`;
     return historico.filter(item => {
         const nomeMatch = item.resultado.nome.toLowerCase().includes(filtroNome.toLowerCase());
         const filialMatch = item.resultado.filial.toLowerCase().includes(filtroFilial.toLowerCase());
-        return nomeMatch && filialMatch;
+        const anoMatch = filtroAno === '' || item.resultado.ano === filtroAno;
+        return nomeMatch && filialMatch && anoMatch;
     });
-  }, [historico, filtroNome, filtroFilial]);
+  }, [historico, filtroNome, filtroFilial, filtroAno]);
 
   const renderHistorico = () => (
     <div className="p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-5xl mx-auto transition-all duration-300 animate-fade-in" style={{backgroundColor: COLORS.surface}}>
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8" style={{ color: COLORS.textPrimary }}>Histórico de Cálculos</h2>
         
         {/* Search Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
             <div>
               <label htmlFor="filtroNome" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Buscar por Nome</label>
               <input
@@ -1000,6 +1005,18 @@ Pelo que para maior clareza firmo o presente.`;
                 style={{backgroundColor: '#2A2A2A', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
               />
             </div>
+            <div>
+              <label htmlFor="filtroAno" className="block text-sm font-medium mb-1" style={{color: COLORS.textSecondary}}>Filtrar por Ano</label>
+              <input
+                type="number"
+                id="filtroAno"
+                value={filtroAno}
+                onChange={(e) => setFiltroAno(e.target.value)}
+                placeholder="Ex: 2024"
+                className="w-full px-4 py-3 rounded-lg transition"
+                style={{backgroundColor: '#2A2A2A', border: `1px solid ${COLORS.border}`, color: COLORS.textPrimary}}
+              />
+            </div>
         </div>
 
         {/* History List */}
@@ -1007,8 +1024,10 @@ Pelo que para maior clareza firmo o presente.`;
             {filteredHistorico.length > 0 ? filteredHistorico.map(item => (
                 <div key={item.id} className="p-4 rounded-lg flex flex-wrap justify-between items-center gap-4" style={{backgroundColor: '#2A2A2A', border: `1px solid ${COLORS.border}`}}>
                     <div className="flex-grow">
-                        <p className="font-bold" style={{color: COLORS.textPrimary}}>{item.resultado.nome}</p>
-                        <p className="text-sm" style={{color: COLORS.textSecondary}}>{item.resultado.filial} – {item.data}</p>
+                        <p className="font-bold text-lg" style={{color: COLORS.textPrimary}}>{item.resultado.nome}</p>
+                        <p className="text-sm" style={{color: COLORS.textSecondary}}>
+                            {item.resultado.filial} – Ano: <span className="text-white font-semibold">{item.resultado.ano}</span> – Lançado em: {item.data}
+                        </p>
                     </div>
                     <div className="flex-shrink-0 text-right">
                         <p className="font-bold text-lg mb-1" style={{color: COLORS.success}}>{formatCurrency(item.resultado.totalGeral)}</p>
